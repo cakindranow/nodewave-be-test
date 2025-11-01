@@ -35,7 +35,7 @@ model Product {
 
 model UploadFile {
   id            Int       @id @default(autoincrement())
-  requestID       String
+  requestID     String    @unique
   status        FileStatus @default(IN_PROGRESS)
   totalRows     Int
   processedRows Int        @default(0)

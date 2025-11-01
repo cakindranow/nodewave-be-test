@@ -43,3 +43,6 @@ CREATE TABLE "UploadFile" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UploadFile_requestID_key" ON "UploadFile"("requestID");
