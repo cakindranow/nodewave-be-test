@@ -1,190 +1,221 @@
-# Node Wave Base Repositories for Backend
+# Product Excel Background Processing System
 
+This repository implements a background processing system to handle **large Excel file uploads** efficiently without causing server timeout. Processing is done asynchronously using a message broker.
 
-## Tech Stacks 
+---
 
-- Language : TypeScript 
-- ORM : Prisma 
-- Database : MySQL
-- HTTP Framework : Express 
-- Logging : Winston + Morgan
+## 🚀 Tech Stack
 
-> [!NOTE]  
->  As stated in Getting Started parts of our notion, don't forget to make sure that you have Node.js >= 16.14.2 and MySQL >= 8.0.3
+| Component      | Technology       | Description                                       |
+| -------------- | ---------------- | ------------------------------------------------- |
+| Language       | TypeScript       | Main backend language                             |
+| Framework      | Express          | HTTP REST API Framework                           |
+| Database       | **PostgreSQL**   | Stores job status, file metadata, processing logs |
+| ORM            | Prisma           | Database schema and query management              |
+| Message Broker | **RabbitMQ**     | Job queue, message routing to background worker   |
+| Logging        | Winston + Morgan | Application and request logging                   |
 
-## How to use
+> Ensure the following versions or later are installed:
+>
+> * Node.js >= 16.14.2
+> * PostgreSQL >= 14
+> * RabbitMQ server running locally or via Docker
 
-Clone this repository, and set up various things like :
+---
 
-- change package.json structure
-- change auth mechanism to match project
-- update readme (delete this how to use part and change the title!)
+## 📦 System Overview
 
-> [!IMPORTANT]  
->  Steps below are steps to run on project, this repo is only a base, not a fully runnable project, this repo only serve as a template! If you wish to try this repo and add more functionality, please create your own branch locally :)
+This system supports processing large Excel files without blocking API request threads. The main idea:
 
-## Steps To Run Project Locally
+1. Client uploads Excel file
+2. API saves file & creates job record in DB (`IN_PROGRESS`)
+3. API publishes job message to RabbitMQ
+4. API immediately returns success response
+5. Background worker consumes message & processes file
+6. Worker updates job status to `DONE` or `FAILED`
+7. Client checks job status via API
+
+---
+
+## 🧠 System Flow Diagram
 
 ```
+Client
+  ↓
+POST /upload
+  ↓
+Store file → Create job record → Publish job → Return success
+  ↓
+ RabbitMQ Queue
+  ↓
+ Worker reads job → Parses Excel → Updates DB
+  ↓
+Client polls GET /file-uploads/:id
+```
+
+---
+
+## 🗃️ Database Schema
+
+```prisma
+model User {
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  email     String   @unique
+  password  String
+  role      Roles    @default(USER)
+}
+
+enum Roles {
+  ADMIN
+  USER
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Int
+  stock       Int     @default(0)
+  createdAt   Int
+}
+
+model UploadFile {
+  id            Int       @id @default(autoincrement())
+  requestID     String    @unique
+  status        FileStatus @default(IN_PROGRESS)
+  totalRows     Int
+  processedRows Int        @default(0)
+  createdAt     Int
+  updatedAt     Int
+  error         String?
+}
+
+enum FileStatus {
+  IN_PROGRESS
+  DONE
+  FAILED
+}
+```
+
+---
+
+## 🛠️ How to Run Locally
+
+### 1. Clone repo
+
+```bash
+git clone <repo-url>
+cd project-folder
 git checkout develop
 ```
-Install dependencies with :
 
-```powershell
+### 2. Install dependencies
+
+```bash
 npm install
 ```
 
-Get .env value, and change db connection url in .env
+### 3. Setup `.env`
 
-Run prisma db migration with :
-
-```powershell
-npx prisma migrate --name <migration_name>
 ```
-Run seeder for admin user :
-
-  > [!IMPORTANT]  
-  > Delete this part on your repository in case there is no seeder available on your codebase.
-
-```powershell
-npm run seed
+DATABASE_URL="postgresql://user:pass@localhost:5432/dbname"
+RABBITMQ_URL="amqp://localhost"
 ```
 
-## Running The App 
+### 4. Run migrations
 
-This base app was meant to have several different implementation, for now we just have a REST API Server, but if we happen to 
-have more like grpc, cron, or maybe pub-sub consumer, we can register it too the 
-`/app` and `/server` folder 
-
-and register the command into the `/src/index.ts` as the argument of choice 
-
-By Default, to run the app with hot-reload simply run 
+```bash
+npx prisma migrate --name init
 ```
+
+### 5. Start services
+
+#### Start API
+
+```bash
 npm run dev -- --service=rest
 ```
 
-If you want to start the build version, run it with : 
-```
-npm start -- --service=rest
-```
+#### Start Worker
 
-## Creating new features / endpoint
-
-- Branch out from develop
-```
-git checkout -b <branch_name>
-```
-- Create a new schema (if needed) on prisma/schema.prisma
-
-- Migrate the schema with :
-```
-npx prisma migrate --name <migration_name>
+```bash
+npm run consumer
 ```
 
-- Create new entity on `/entities` folder
+---
 
-- Create validation for that entities (for create and update if any) on `/validations` folder
+## 📂 Folder Structure Highlights
 
-- Create the service layer on /services
+| Folder             | Description                                     |
+| ------------------ | ----------------------------------------------- |
+| `/app`             | App initializer by service type (REST / Worker) |
+| `/server`          | Runtime server configs per service              |
+| `/controllers`     | REST controllers                                |
+| `/services`        | Business logic, job orchestrator                |
+| `/server/rabbitmq` | RabbitMQ publisher & consumer                   |
+| `/utils`           | Helpers (file handler, excel parser, logger)    |
 
-- Link it into controller in /controllers
+---
 
-- Create new routes file instance at /routes, for example `ProductRoutes.ts`
+## ✅ Job Lifecycle
 
-- Register the routes into registry (`routes/registry.ts`)
+| Status      | Meaning                     |
+| ----------- | --------------------------- |
+| IN_PROGRESS | Job queued or processing    |
+| DONE        | File processed successfully |
+| FAILED      | Processing failed           |
 
-- use the routes, with router.use(), for example :
+Worker retries automatically based on configured retry logic.
 
-  ```js
-  router.use("/products", RoutesRegistry.productRoutes);
-  ```
+---
 
-- Test in postman and document it with example
+## 🧪 Testing
 
+### 🔐 Login First
 
-## Folder Structures Brief Explanation 
+Before testing upload, authenticate first:
 
-#### Apps and Servers 
+**POST /login**
 
-- `/app` 
+```json
+{
+  "email": "admin@test.com",
+  "password": "admin123"
+}
+```
 
-  This contains app inilization for different communication protocol, files inside this directory is responsible to starting up the communcation protocol based server
+Save the returned token and use it in `Authorization: Bearer <token>` header.
 
-  Default app is rest, if you want to add more , you can add it by naming it something like `<protocol>.ts` , e.g. : `grpc.ts` , add it to instance.ts 
+### 📤 Upload File
 
-- `/server` 
-  
-  This contains server initialization for different communication 
-  protocol server, file inside this directory will responsible to hold the configuration needed, like the the server initialization, dependencies for this communcation protocol etc. 
+```bash
+curl --location 'http://localhost:3150/products/upload' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzYxOTgwMjkwLCJleHAiOjE3NjIxNTMwOTB9.IJnR5hPmaq97-DvTJ6oLoOutmMYmA7LAAPG0A_0eNc4' \
+--form 'file=@"/C:/Users/Ryzen XT/Downloads/products_sample.xlsx"'
+```
 
-  if you want to add more , you can add it by naming it something like `<protocol>.ts` , e.g. : `grpc.ts` , add it to the instance.ts 
+### ✅ Check Job Status
 
-> [!IMPORTANT]  
-> After you add both app and server, configure it to be receivable my the command line argument, by adding the app function and argument into the if condition inside `src/index.ts`
+```bash
+curl --location --request GET 'http://localhost:3150/file-uploads/1beb75f4-c362-4040-a92f-d317c90c6673d' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzYyMDEyMTAxLCJleHAiOjE3NjIxODQ5MDF9.ymNsh94EeQ66n9J6xkB3L_GZ2u6MHWcLyyEF93V2ZeU' \
+--form 'file=@"/C:/Users/Ryzen XT/Downloads/products_sample.xlsx"'
+```
 
-#### Entities 
+---
 
-- `/entity` 
+## 📣 Notes
 
-  Files inside this directory, will hold various `interfaces` or `types`, needed for data transfer and access (DTOs and DAOs), in this directory, we follow the Domain-Driven pattern, where it will easily transalates to each domain means each table on db. 
+* This project uses an asynchronous background task model
+* Ideal for high‑volume file processing systems
+* Postman collection is available in the repository for testing all endpoints
 
-  Or maybe in other case, you can also specify global types that is used everywhere in the code, like `Service.ts` that we currently have and `Query.ts` entities, this means to hold all types related to service responses and dynamic query arguments and also pagination result.
+---
 
+## 📞 Contact Details
+* Name: Agung Indrawan
+* Email: agungindrawan017@gmail.com
+* WhatsApp: +62 896-1285-4712
 
-#### Packages and Utils
-
-- `/pkg` 
-
-  This dir is simple, you categorize 3rd party integration inside of this dir, you can also define types spesific to this 3rd party inside here, so the common practice is something like : 
-  ```
-    - pkg 
-        - package name 
-            - index.ts -> package instance (use singleton if possible please)
-            - interfaces.ts -> for package spesific typing 
-            - utils.ts  -> for utility functions
-            - ... methodspecific.ts -> for specific sub-functionality, e.g: coreAPI.ts in midtrans pkg only holds functions needed to do payment through midtrans's Core API
-  ```
-
-  We make it in this structure so it will be clear that all of this belongs to specific 3rd party.
-
-- `/utils` 
-
-  This dir will holds utility function that are needed for helpers globally, like string manipulation, dates manipulation etc 
-
- 
-#### Controllers and Services 
-
- - `/controllers` 
-  Here, we also follow domain based filenaming, so each domain will have 1 controller, with the responsibility in controller, only limited to 
-    - Retrieve and parse the request.
-    - Call service function 
-    - Return the response.
-
-
- - `/services`
-
-  Here, we also follow domain based file naming, each domain will have 1 services, and maybe 1 helper service if needed, with the responsibility in service is only to do business logics, calling the db (we don't use repository since prisma orm is already more or less like a repository in it's nature). Please never mix up 3rd party integration here, as we already have the package for that, unless the 3rd party will also have controllers (like midtrans callback).
-
-
-#### Routes, Validations and Middlewares
-
-- `/routes` 
-
-  This folders mainly has 3 parts 
-  1. Domain based files ( e.g. : `ProductRoutes.ts` ), will contains all of the routings by domain 
-  2. `RoutesRegistry.ts`, we pool all the routes exports here 
-  3. index.ts -> we attach all the routes, pooled from `RoutesRegistry.ts` here
-
-- `/validations` 
-
-  Domain based, serve as a middleware, contains validation for any operation that involves sending request body, normally you will create the validation here,
-  and use it on routes as a `middleware`.
- 
-  > [!WARNING]  
-  > Don't use validation function inside controllers because it will cause an error if you do so.
-
-
-- `/middlewares` 
-
-  Here contains middlewares that can be used in the `/server/` directory or that can be used globally inside many routes, for example we have 
-  `authMiddleware` for JWT authentication, `morganMiddleware` for http logging.
+--- 

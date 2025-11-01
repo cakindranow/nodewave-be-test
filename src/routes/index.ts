@@ -18,6 +18,9 @@ router.get("/example", AuthController.test)
 router.get("/example/authenticated", authJWT ,AuthController.test)
 router.post("/login", AuthController.login)
 router.post("/products/upload", authJWT ,upload.single("file"), ProductController.uploadExcel);
+router.get("/products", authJWT, ProductController.getProducts);
+router.get("/file-uploads", authJWT, ProductController.getFileUploads);
+router.get("/file-uploads/:requestID", authJWT, ProductController.getFileUploadByRequestID);
 
 
 router.all("*", (req: Request, res: Response) => {

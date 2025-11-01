@@ -1,0 +1,97 @@
+{
+	"info": {
+		"_postman_id": "a124b378-222f-4124-aada-9c7f2f9c9eee",
+		"name": "Nodewave Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "28523846"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\" : \"admin@test.com\",\r\n    \"password\" : \"admin123\"\r\n\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3150/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3150",
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Upload Excel",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzYxOTgwMjkwLCJleHAiOjE3NjIxNTMwOTB9.IJnR5hPmaq97-DvTJ6oLoOutmMYmA7LAAPG0A_0eNc4",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/Ryzen XT/Downloads/products_sample.xlsx"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3150/products/upload",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3150",
+					"path": [
+						"products",
+						"upload"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Test Example",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3150/example",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3150",
+					"path": [
+						"example"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
