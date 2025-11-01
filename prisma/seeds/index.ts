@@ -1,5 +1,11 @@
-async function seed(){
-    // Seed Function Call Goes Here
+import { PrismaClient } from "@prisma/client"
+import { seedAdmin } from "./seedAdmin"
+
+
+ const prisma = new PrismaClient() // <-- ini prisma nya
+
+async function seed() {
+    await seedAdmin(prisma)
    
 }
 

@@ -6,8 +6,43 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 // Declare schemas here
+
+model User {
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  email     String   @unique
+  password  String
+  role      Roles    @default(USER)
+}
+
+enum Roles {
+  ADMIN
+  USER
+}
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Int
+  stock       Int     @default(0)
+  createdAt   Int     // unix timestamp integer
+}
+
+model UploadFile {
+  id            Int       @id @default(autoincrement())
+  fileUrl       String
+  status        FileStatus @default(IN_PROGRESS)
+  createdAt     Int
+  error  String?
+}
+
+enum FileStatus {
+  IN_PROGRESS
+  DONE
+  FAILED
+}
