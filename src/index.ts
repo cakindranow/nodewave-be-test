@@ -23,3 +23,4 @@ if (parsedArgs["service"] == "rest") {
   displayAsciiArt(REST_ASCII_ART)
   app.restApp()
 }
+

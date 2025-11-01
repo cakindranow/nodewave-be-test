@@ -15,6 +15,7 @@ export class AuthService {
             });
 
             if (!user) {
+                Logger.debug("AuthService.login : email not found")
                 return {
                     status: false,
                     data: {},
@@ -28,6 +29,7 @@ export class AuthService {
             // Validate password
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
+                Logger.debug("Authcontoller.login : invalid email or password")
                 return {
                     status: false,
                     data: {},
@@ -48,7 +50,7 @@ export class AuthService {
                 }
             };
         } catch (error) {
-            Logger.error(`ExampleService.get : ${error}`)
+            Logger.error(`AuthController.login : ${error}`)
             return INTERNAL_SERVER_ERROR_SERVICE_RESPONSE
         }
 

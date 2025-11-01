@@ -30,9 +30,12 @@ CREATE TABLE "Product" (
 -- CreateTable
 CREATE TABLE "UploadFile" (
     "id" SERIAL NOT NULL,
-    "fileUrl" TEXT NOT NULL,
+    "requestID" TEXT NOT NULL,
     "status" "FileStatus" NOT NULL DEFAULT 'IN_PROGRESS',
+    "totalRows" INTEGER NOT NULL,
+    "processedRows" INTEGER NOT NULL DEFAULT 0,
     "createdAt" INTEGER NOT NULL,
+    "updatedAt" INTEGER NOT NULL,
     "error" TEXT,
 
     CONSTRAINT "UploadFile_pkey" PRIMARY KEY ("id")
